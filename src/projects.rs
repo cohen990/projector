@@ -1,12 +1,17 @@
+use std::path::{Path, PathBuf};
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    file_system,
+    file_system::{self, StoredOnFileSystem},
     tickets::{TicketMetadata, TicketStatus},
 };
 
+const DEFAULT_FILE_NAME: &str = "project.yaml";
+
 #[derive(Serialize, Deserialize)]
 pub struct Project {
+    pub file_name: PathBuf,
     pub name: String,
     pub ticket_pointer: usize,
     pub open_tickets: Vec<TicketMetadata>,
@@ -16,21 +21,22 @@ pub struct Project {
 impl Project {
     pub fn save_new(name: String) -> Self {
         let project = Self {
+            file_name: Path::new(DEFAULT_FILE_NAME).to_owned(),
             name,
             ticket_pointer: 1,
             open_tickets: Vec::new(),
             closed_tickets: Vec::new(),
         };
-        file_system::save_to_new_file("project.yaml", &project);
+        file_system::save_to_new_file(&project);
         project
     }
 
     pub fn load() -> Self {
-        file_system::read_to_struct("project.yaml")
+        file_system::read_to_struct(DEFAULT_FILE_NAME)
     }
 
     pub fn save(&self) {
-        file_system::update_file("project.yaml", self);
+        file_system::update_file(self);
     }
 
     pub(crate) fn change_status(
@@ -70,5 +76,11 @@ impl Project {
         }
 
         self.save();
+    }
+}
+
+impl StoredOnFileSystem for Project {
+    fn get_file_name(&self) -> PathBuf {
+        self.file_name.to_owned()
     }
 }

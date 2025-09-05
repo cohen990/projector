@@ -1,6 +1,13 @@
-use std::fs::{File, read_dir, remove_file};
+use std::{
+    fs::{File, read_dir, remove_file},
+    path::PathBuf,
+};
 
 use serde::{Serialize, de::DeserializeOwned};
+
+pub trait StoredOnFileSystem {
+    fn get_file_name(&self) -> PathBuf;
+}
 
 pub fn read_to_struct<T: DeserializeOwned>(file_name: &str) -> T {
     let target: T;
@@ -11,22 +18,23 @@ pub fn read_to_struct<T: DeserializeOwned>(file_name: &str) -> T {
     target
 }
 
-pub fn save_to_new_file<T: Serialize>(file_name: &str, serializable: T) {
-    let file = File::create_new(file_name).unwrap();
-    let _ = serde_yaml::to_writer(file, &serializable);
+pub fn save_to_new_file<T: Serialize + StoredOnFileSystem>(to_save: &T) {
+    let file = File::create_new(to_save.get_file_name()).unwrap();
+    let _ = serde_yaml::to_writer(file, &to_save);
 }
 
-pub fn update_file<T: Serialize>(file_name: &str, serializable: T) {
+pub fn update_file<T: Serialize + StoredOnFileSystem>(to_update: &T) {
     let file = File::options()
         .write(true)
         .truncate(true)
-        .open(file_name)
+        .open(to_update.get_file_name())
         .unwrap();
-    let _ = serde_yaml::to_writer(file, &serializable);
+    let _ = serde_yaml::to_writer(file, &to_update);
 }
 
-pub fn clear_project() {
+pub fn clear_project() -> Vec<PathBuf> {
     let members = read_dir(std::env::current_dir().unwrap()).unwrap();
+    let mut removed_members: Vec<PathBuf> = vec![];
     for member in members {
         let _ = match member {
             Ok(inner) => {
@@ -34,7 +42,8 @@ pub fn clear_project() {
                 match path.extension() {
                     Some(extension) => {
                         if extension == "yaml" {
-                            let _ = remove_file(path);
+                            let _ = remove_file(&path);
+                            removed_members.push(path);
                         }
                     }
                     None => (),
@@ -43,4 +52,5 @@ pub fn clear_project() {
             Err(_) => todo!(),
         };
     }
+    removed_members
 }

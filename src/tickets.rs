@@ -1,6 +1,11 @@
+use std::{
+    fmt::Display,
+    path::{Path, PathBuf},
+};
+
 use serde::{Deserialize, Serialize};
 
-use crate::file_system;
+use crate::file_system::{self, StoredOnFileSystem};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TicketMetadata {
@@ -32,7 +37,7 @@ impl Ticket {
             comments: Vec::new(),
             status: TicketStatus::Open,
         };
-        file_system::save_to_new_file(&format!("{}.yaml", ticket.number), &ticket);
+        file_system::save_to_new_file(&ticket);
         ticket
     }
 
@@ -41,7 +46,7 @@ impl Ticket {
     }
 
     pub fn save(&self) {
-        file_system::update_file(&format!("{}.yaml", self.number), self);
+        file_system::update_file(self);
     }
 }
 
@@ -49,4 +54,19 @@ impl Ticket {
 pub enum TicketStatus {
     Open,
     Closed,
+}
+
+impl Display for TicketStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TicketStatus::Open => f.write_str("Open"),
+            TicketStatus::Closed => f.write_str("Closed"),
+        }
+    }
+}
+
+impl StoredOnFileSystem for Ticket {
+    fn get_file_name(&self) -> PathBuf {
+        Path::new(&format!("{}.yaml", self.number)).to_path_buf()
+    }
 }

@@ -11,6 +11,7 @@ pub struct Cli {
 pub enum Commands {
     Init {
         project_name: String,
+        remote_url: String,
     },
     Ticket {
         #[arg(conflicts_with("new"), default_value("0"))]

@@ -4,6 +4,7 @@ use crate::cli::{Cli, Commands};
 
 mod cli;
 mod file_system;
+mod git;
 mod handlers;
 mod printer;
 mod projects;
@@ -13,7 +14,10 @@ mod tickets;
 fn main() {
     let cli = Cli::parse();
     match cli.commands {
-        Commands::Init { project_name } => handlers::projects::init::handle(project_name),
+        Commands::Init {
+            project_name,
+            remote_url,
+        } => handlers::projects::init::handle(project_name, remote_url),
         Commands::Ticket {
             number,
             comment,
